@@ -1,4 +1,6 @@
 import os
+from pydantic import BaseModel
+from typing import List, Optional
 from fastapi.responses import JSONResponse
 from typing import List, Optional, Any
 from fastapi import FastAPI, Header, HTTPException
@@ -76,13 +78,27 @@ class LogIn(BaseModel):
     resolved: Optional[bool] = None
     followups_count: Optional[int] = None
     user_feedback: Optional[str] = None
+    
+class IdResponse(BaseModel):
+    id: int
+
+class CaseOut(BaseModel):
+    id: int
+    title: str
+    domain: str
+    card_text: str
+    score: float
+
+class SearchOut(BaseModel):
+    retrieval_confidence: float
+    cases: List[CaseOut]
 
 # ---------- Routes ----------
 @app.get("/health")
 def health():
     return {"ok": True}
 
-@app.post("/add_case")
+@app.post("/add_case", response_model=IdResponse)
 def add_case(payload: CaseIn, x_api_key: Optional[str] = Header(default=None)):
     require_key(x_api_key)
 
@@ -108,7 +124,8 @@ def add_case(payload: CaseIn, x_api_key: Optional[str] = Header(default=None)):
              payload.best_answer, payload.pitfalls, payload.tags, vec),
         )
         new_id = cur.fetchone()["id"]
-    return JSONResponse(content={"id": new_id})
+    return {"id": new_id}
+
 
 @app.post("/search_cases", response_model=SearchOut)
 def search_cases(payload: SearchIn, x_api_key: Optional[str] = Header(default=None)):
@@ -157,10 +174,10 @@ def search_cases(payload: SearchIn, x_api_key: Optional[str] = Header(default=No
     best = max([c.score for c in cases], default=0.0)
     confidence = float(max(0.0, min(1.0, best)))
 
-    return SearchOut(retrieval_confidence=confidence, cases=cases)
+    return {"retrieval_confidence": confidence, "cases": cases}
 
 
-@app.post("/log_interaction")
+@app.post("/log_interaction", response_model=IdResponse)
 def log_interaction(payload: LogIn, x_api_key: Optional[str] = Header(default=None)):
     require_key(x_api_key)
 
@@ -183,4 +200,4 @@ def log_interaction(payload: LogIn, x_api_key: Optional[str] = Header(default=No
             ),
         )
         new_id = cur.fetchone()["id"]
-    return JSONResponse(content={"id": new_id})
+    return {"id": new_id}
