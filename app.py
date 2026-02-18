@@ -1,4 +1,5 @@
 import os
+from fastapi.responses import JSONResponse
 from typing import List, Optional, Any
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
@@ -107,7 +108,7 @@ def add_case(payload: CaseIn, x_api_key: Optional[str] = Header(default=None)):
              payload.best_answer, payload.pitfalls, payload.tags, vec),
         )
         new_id = cur.fetchone()["id"]
-    return {"id": new_id}
+return JSONResponse(content={"id": new_id})
 
 @app.post("/search_cases", response_model=SearchOut)
 def search_cases(payload: SearchIn, x_api_key: Optional[str] = Header(default=None)):
@@ -182,4 +183,4 @@ def log_interaction(payload: LogIn, x_api_key: Optional[str] = Header(default=No
             ),
         )
         new_id = cur.fetchone()["id"]
-    return {"id": new_id}
+return JSONResponse(content={"id": new_id})
