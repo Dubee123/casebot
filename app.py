@@ -45,6 +45,15 @@ def embed(text: str) -> List[float]:
     return r.json()["data"][0]["embedding"]
 
 # ---------- Schemas ----------
+class AddCaseIn(BaseModel):
+    title: str
+    domain: str
+    problem: str
+    constraints: str
+    best_answer: str
+    pitfalls: str
+    tags: List[str]
+
 class CaseIn(BaseModel):
     title: str
     domain: str = "general"
@@ -56,8 +65,8 @@ class CaseIn(BaseModel):
 
 class SearchIn(BaseModel):
     query: str
-    domain: Optional[str] = None
-    top_k: int = 12
+    top_k: int = 5
+
 
 class CaseOut(BaseModel):
     id: int
@@ -71,13 +80,10 @@ class SearchOut(BaseModel):
     cases: List[CaseOut]
 
 class LogIn(BaseModel):
-    conversation_id: Optional[str] = None
-    user_query: str
-    assistant_answer: str
-    retrieved_case_ids: List[int] = Field(default_factory=list)
-    resolved: Optional[bool] = None
-    followups_count: Optional[int] = None
-    user_feedback: Optional[str] = None
+    query: str
+    answer: str
+    case_id: int
+    user_feedback: str | None = None
     
 class IdResponse(BaseModel):
     id: int
@@ -99,7 +105,7 @@ def health():
     return {"ok": True}
 
 @app.post("/add_case", response_model=IdResponse)
-def add_case(payload: CaseIn, x_api_key: Optional[str] = Header(default=None)):
+def add_case(payload: AddCaseIn):
     require_key(x_api_key)
 
     card_text = (
@@ -128,7 +134,7 @@ def add_case(payload: CaseIn, x_api_key: Optional[str] = Header(default=None)):
 
 
 @app.post("/search_cases", response_model=SearchOut)
-def search_cases(payload: SearchIn, x_api_key: Optional[str] = Header(default=None)):
+def search_cases(payload: SearchIn):
     require_key(x_api_key)
 
     qvec = embed(payload.query)
@@ -178,7 +184,7 @@ def search_cases(payload: SearchIn, x_api_key: Optional[str] = Header(default=No
 
 
 @app.post("/log_interaction", response_model=IdResponse)
-def log_interaction(payload: LogIn, x_api_key: Optional[str] = Header(default=None)):
+def log_interaction(payload: LogIn):
     require_key(x_api_key)
 
     with db() as conn, conn.cursor() as cur:
