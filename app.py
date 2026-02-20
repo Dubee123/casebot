@@ -65,6 +65,7 @@ class CaseIn(BaseModel):
 
 class SearchIn(BaseModel):
     query: str
+    domain: Optional[str] = None
     top_k: int = 5
 
 
