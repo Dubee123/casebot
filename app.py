@@ -105,7 +105,7 @@ def health():
     return {"ok": True}
 
 @app.post("/add_case", response_model=IdResponse)
-def add_case(payload: AddCaseIn):
+def add_case(payload: AddCaseIn, x_api_key: Optional[str] = Header(default=None)):
     require_key(x_api_key)
 
     card_text = (
@@ -134,7 +134,7 @@ def add_case(payload: AddCaseIn):
 
 
 @app.post("/search_cases", response_model=SearchOut)
-def search_cases(payload: SearchIn):
+def search_cases(payload: SearchIn, x_api_key: Optional[str] = Header(default=None)):
     require_key(x_api_key)
 
     qvec = embed(payload.query)
@@ -184,7 +184,7 @@ def search_cases(payload: SearchIn):
 
 
 @app.post("/log_interaction", response_model=IdResponse)
-def log_interaction(payload: LogIn):
+def log_interaction(payload: LogIn, x_api_key: Optional[str] = Header(default=None)):
     require_key(x_api_key)
 
     with db() as conn, conn.cursor() as cur:
