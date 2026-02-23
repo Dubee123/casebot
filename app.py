@@ -1,4 +1,5 @@
 import os
+import json
 from pydantic import BaseModel
 from typing import List, Optional
 from fastapi.responses import JSONResponse
@@ -45,6 +46,10 @@ def embed(text: str) -> List[float]:
     return r.json()["data"][0]["embedding"]
 
 # ---------- Schemas ----------
+class UserFeedback(BaseModel):
+    rating: Optional[int] = None
+    comment: Optional[str] = None
+
 class AddCaseIn(BaseModel):
     title: str
     domain: str
@@ -84,7 +89,7 @@ class LogIn(BaseModel):
     query: str
     answer: str
     case_id: int
-    user_feedback: str | None = None
+    user_feedback: Optional[UserFeedback] = None
     
 class IdResponse(BaseModel):
     id: int
@@ -187,7 +192,7 @@ def search_cases(payload: SearchIn, x_api_key: Optional[str] = Header(default=No
 @app.post("/log_interaction", response_model=IdResponse)
 def log_interaction(payload: LogIn, x_api_key: Optional[str] = Header(default=None)):
     require_key(x_api_key)
-
+    feedback_text = json.dumps(payload.user_feedback.model_dump()) if payload.user_feedback else None
     with db() as conn, conn.cursor() as cur:
         cur.execute(
             """
@@ -203,7 +208,7 @@ def log_interaction(payload: LogIn, x_api_key: Optional[str] = Header(default=No
                 payload.retrieved_case_ids,
                 payload.resolved,
                 payload.followups_count,
-                payload.user_feedback,
+                feedback_text,
             ),
         )
         new_id = cur.fetchone()["id"]
