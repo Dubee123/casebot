@@ -86,6 +86,7 @@ class SearchOut(BaseModel):
     cases: List[CaseOut]
 
 class LogIn(BaseModel):
+    conversation_id: Optional[str] = None
     query: str
     answer: str
     case_id: int
