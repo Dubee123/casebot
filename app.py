@@ -89,7 +89,9 @@ class LogIn(BaseModel):
     conversation_id: Optional[str] = None
     query: str
     answer: str
-    case_id: int
+    retrieved_case_ids: List[int] = []
+    resolved: Optional[bool] = None
+    followups_count: Optional[int] = None
     user_feedback: Optional[UserFeedback] = None
     
 class IdResponse(BaseModel):
@@ -192,7 +194,7 @@ def search_cases(payload: SearchIn, x_api_key: Optional[str] = Header(default=No
 
 @app.post("/log_interaction", response_model=IdResponse)
 def log_interaction(payload: LogIn, x_api_key: Optional[str] = Header(default=None)):
-    require_key(x_api_key)
+    require_key(x_api_key)    
     feedback_text = json.dumps(payload.user_feedback.model_dump()) if payload.user_feedback else None
     with db() as conn, conn.cursor() as cur:
         cur.execute(
@@ -204,8 +206,8 @@ def log_interaction(payload: LogIn, x_api_key: Optional[str] = Header(default=No
             """,
             (
                 payload.conversation_id,
-                payload.user_query,
-                payload.assistant_answer,
+                payload.query,
+                payload.answer,
                 payload.retrieved_case_ids,
                 payload.resolved,
                 payload.followups_count,
